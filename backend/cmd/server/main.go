@@ -15,11 +15,11 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 8080, "HTTP server port (default 8080)")
-	host := flag.String("host", "127.0.0.1", "Host address to bind to (default localhost 127.0.0.1)")
+	port := flag.String("port", defaultPort(), "HTTP server port")
+	host := flag.String("host", defaultHost(), "Host address to bind to")
 	flag.Parse()
 
-	addr := fmt.Sprintf("%s:%d", *host, *port)
+	addr := fmt.Sprintf("%s:%s", *host, *port)
 	httpServer := &http.Server{
 		Addr:         addr,
 		Handler:      web.NewHandler(),
@@ -32,25 +32,33 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("=====================================================")
-		log.Printf("  TLScope Backend API Service v1.0.0")
-		log.Printf("  Listening on http://%s", addr)
-		log.Printf("  Bound to localhost for secure development.")
-		log.Printf("  Endpoints: /api/health, /api/analyze, /api/history, /api/demo")
-		log.Printf("=====================================================")
+		log.Printf("TLScope Backend API Service listening on http://%s", addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Fatal: HTTP server error: %v", err)
 		}
 	}()
 
 	<-stop
-	log.Println("Shutting down TLScope backend service gracefully...")
-
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		log.Printf("Server shutdown error: %v", err)
 	}
-	log.Println("TLScope backend service stopped.")
+}
+
+func defaultPort() string {
+	if port := os.Getenv("PORT"); port != "" {
+		return port
+	}
+	return "8080"
+}
+
+func defaultHost() string {
+	// Vercel assigns PORT and needs the application to accept connections on
+	// every interface. Local development remains bound to localhost by default.
+	if os.Getenv("PORT") != "" {
+		return "0.0.0.0"
+	}
+	return "127.0.0.1"
 }

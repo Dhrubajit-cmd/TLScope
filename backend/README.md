@@ -5,16 +5,16 @@
 Run the local HTTP server from this directory:
 
 ```bash
-go run ./cmd/tlscope -port 8080
+go run ./cmd/server -port 8080
 ```
 
 The React development server proxies `/api` requests to this server.
 
 ## Vercel
 
-Vercel serves `api/index.go` as a Go Function. Do not add a `main.go` file to
-this directory: a root-level executable makes Vercel treat the project as a
-long-running Go server instead of a serverless API.
+Vercel runs `cmd/server/main.go` as its managed Go backend. The executable
+uses Vercel's `PORT` automatically and listens on `0.0.0.0` in production;
+local development remains bound to `127.0.0.1:8080`.
 
 Set this production environment variable in Vercel:
 
